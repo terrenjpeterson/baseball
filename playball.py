@@ -18,10 +18,13 @@ runner_on_first = False
 runner_on_second = False
 runner_on_third = False
 
-# connect to the clitest queue
+# connect to the AtBat queue that has simulations predefined
+
 my_queue = conn.get_queue('AtBat')
 print 'queue name'
 print my_queue
+
+# start functions here
 
 # process logic around an out
 

@@ -20,6 +20,9 @@ v_ab = [0] * 10
 h_hit = [0] * 10
 v_hit = [0] * 10
 
+h_lineup = []
+v_lineup = []
+
 visitor_batter_up = 1
 home_batter_up = 1
 
@@ -33,10 +36,41 @@ runner_on_third = False
 # connect to the AtBat queue that has simulations predefined
 
 my_queue = conn.get_queue('AtBat')
-print 'queue name'
-print my_queue
 
 # start functions here
+
+# retrieve team information here based on which team is playing
+
+def get_team_info():
+
+    team = 'nationals'
+
+    team_info = boto.connect_s3()
+
+    bucket = team_info.get_bucket('baseballgame')
+
+    from boto.s3.key import Key
+
+    k = Key(bucket)
+    k.key = team
+
+    s = k.get_contents_as_string()
+    x = json.loads(s)
+
+    h_lineup.append(team)
+    h_lineup.append(x[team]['first']['name'])
+    h_lineup.append(x[team]['second']['name'])
+    h_lineup.append(x[team]['third']['name'])
+    h_lineup.append(x[team]['fourth']['name'])
+    h_lineup.append(x[team]['fifth']['name'])
+    h_lineup.append(x[team]['sixth']['name'])
+    h_lineup.append(x[team]['seventh']['name'])
+    h_lineup.append(x[team]['eighth']['name'])
+    h_lineup.append(x[team]['ninth']['name'])
+
+    print h_lineup[1], h_lineup[2], h_lineup[3]
+    print h_lineup[4], h_lineup[5], h_lineup[6]
+    print h_lineup[7], h_lineup[8], h_lineup[9]
 
 # process logic around an atbat
 
@@ -103,7 +137,7 @@ def process_final_score():
 
     print '   HOME BOX SCORE'
     for i in range(1, 10):
-        print 'batter ' + str(i) + ' AB ' + str(h_ab[i]) + ' H ' + str(h_hit[i])
+        print h_lineup[i] + '\t' + str(i) + ' AB ' + str(h_ab[i]) + ' H ' + str(h_hit[i])
         home_ab += h_ab[i]
         home_hit += h_hit[i]
 
@@ -300,6 +334,8 @@ def record_homerun():
    print '      Home %d ' % home_score
       
 # main processing for the game
+
+get_team_info()
 
 while (game_inprogress):
     process_atbat()

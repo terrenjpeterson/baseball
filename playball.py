@@ -99,6 +99,8 @@ def process_final_score():
 
     print 'TOTAL : AB ' + str(visitor_ab) + ' H ' + str(visitor_hit) 
 
+    print '---------------------------'
+
     print '   HOME BOX SCORE'
     for i in range(1, 10):
         print 'batter ' + str(i) + ' AB ' + str(h_ab[i]) + ' H ' + str(h_hit[i])
@@ -107,9 +109,9 @@ def process_final_score():
 
     print 'TOTAL : AB ' + str(home_ab) + ' H ' + str(home_hit)
 
+    print '---------------------------'
+
     game_queue = conn.get_queue('BaseballGame')
-    print 'queue name'
-    print game_queue
 
     from boto.sqs.message import Message
 
@@ -154,6 +156,7 @@ def inning_change():
          visitor_atbat = False
      else:
          inning += 1
+         print '---------------------------'
          print 'Beginning inning number: %d' % inning
          print '---------------------------'
          print 'Score - Visitor %d ' % visitor_score
@@ -230,6 +233,8 @@ def record_double():
     if runner_on_first:
         print 'Runner moves from first to third'
         runner_on_first = False
+
+    print 'Runner advances to second with a double'
 
     runner_on_second = True
 

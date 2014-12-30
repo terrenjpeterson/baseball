@@ -14,6 +14,15 @@ inning = 1
 visitor_score = 0
 home_score = 0
 
+h_ab = [0] * 10
+v_ab = [0] * 10
+
+h_hit = [0] * 10
+v_hit = [0] * 10
+
+visitor_batter_up = 1
+home_batter_up = 1
+
 visitor_atbat = True
 game_inprogress = True
 
@@ -32,7 +41,7 @@ print my_queue
 # process logic around an atbat
 
 def process_atbat():
-    global at_bat, gamespeed
+    global at_bat, gamespeed, visitor_batter_up, home_batter_up, visitor_atbat
 
     m = my_queue.read()
     x = m.get_body()
@@ -49,6 +58,19 @@ def process_atbat():
     else:
         play_hit(at_bat)
 
+    if visitor_atbat:
+        print 'visitor batter : ' + str(visitor_batter_up)
+        v_ab[visitor_batter_up] += 1
+        visitor_batter_up += 1
+        if visitor_batter_up > 9:
+            visitor_batter_up = 1
+    else:
+        print 'home batter : ' + str(home_batter_up)
+        h_ab[home_batter_up] += 1
+        home_batter_up += 1
+        if home_batter_up > 9:
+            home_batter_up = 1
+
     time.sleep(gamespeed)
 
     my_queue.delete_message(m)
@@ -58,10 +80,32 @@ def process_atbat():
 def process_final_score():
     global visitor_score, home_score
 
+    visitor_ab = 0
+    home_ab = 0
+    visitor_hit = 0
+    home_hit = 0
+    
     print '---------------------------'
     print 'Final Score - Visitor %d ' % visitor_score
     print '              Home %d ' % home_score
     print '---------------------------'
+
+    print '  VISITORS BOX SCORE'
+
+    for i in range(1, 10):
+        print 'batter ' + str(i) + ' AB ' + str(v_ab[i]) + ' H ' + str(v_hit[i])
+        visitor_ab += v_ab[i]
+        visitor_hit += v_hit[i]
+
+    print 'TOTAL : AB ' + str(visitor_ab) + ' H ' + str(visitor_hit) 
+
+    print '   HOME BOX SCORE'
+    for i in range(1, 10):
+        print 'batter ' + str(i) + ' AB ' + str(h_ab[i]) + ' H ' + str(h_hit[i])
+        home_ab += h_ab[i]
+        home_hit += h_hit[i]
+
+    print 'TOTAL : AB ' + str(home_ab) + ' H ' + str(home_hit)
 
     game_queue = conn.get_queue('BaseballGame')
     print 'queue name'
@@ -124,6 +168,7 @@ def inning_change():
 # process when an at-bat is a hit
 
 def play_hit(at_bat):
+    global visitor_batter_up, home_batter_up, visitor_atbat
 
     print 'Basehit! : ' + at_bat
 
@@ -135,6 +180,11 @@ def play_hit(at_bat):
         record_triple()
     if at_bat == 'homerun':
         record_homerun()
+
+    if visitor_atbat:
+        v_hit[visitor_batter_up] += 1
+    else:
+        h_hit[home_batter_up] += 1
 
 # process the logic for a single hit
 

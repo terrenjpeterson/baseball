@@ -26,7 +26,28 @@ print my_queue
 
 # start functions here
 
-# process logic around an out
+# process logic around an atbat
+
+def process_atbat():
+    global at_bat
+
+    m = my_queue.read()
+    at_bat = m.get_body()
+
+    if at_bat == 'strikeout':
+        play_out(at_bat)
+    elif at_bat == 'groundout':
+        play_out(at_bat)
+    elif at_bat == 'flyout':
+        play_out(at_bat)
+    else:
+        play_hit(at_bat)
+
+    time.sleep(1)
+
+    my_queue.delete_message(m)
+
+# process logic for an out
 
 def play_out(at_bat):
     global out, inning
@@ -74,7 +95,7 @@ def play_hit(at_bat):
     if at_bat == 'double':
         record_double()
     if at_bat == 'triple':
-        print 'Runner on third'
+        record_triple()
     if at_bat == 'homerun':
         record_homerun()
 
@@ -100,6 +121,7 @@ def record_single():
         runner_on_second = True
 
     runner_on_first = True
+
     print 'Batter advances to first'
 
 # process the logic for a double
@@ -121,6 +143,36 @@ def record_double():
     if runner_on_first:
         print 'Runner moves from first to third'
         runner_on_first = False
+
+    runner_on_second = True
+
+    if visitor_atbat:
+        visitor_score += run_batted_in
+    else:
+        home_score += run_batted_in
+
+# process the logic for a triple
+
+def record_triple():
+
+    global runner_on_first, runner_on_second, runner_on_third, visitor_score, home_score, visitor_atbat
+
+    run_batted_in = 0
+
+    if runner_on_third:
+        print 'Runner scores from third'
+        runner_on_third = False
+        run_batted_in += 1
+    if runner_on_second:
+        print 'Runner scores from second'
+        runner_on_second = False
+        run_batted_in += 1
+    if runner_on_first:
+        print 'Runner scores from third'
+        runner_on_first = False
+        run_batted_in += 1
+
+    runner_on_third = True
 
     if visitor_atbat:
         visitor_score += run_batted_in
@@ -158,20 +210,4 @@ def record_homerun():
 # main processing for the game
 
 for i in range(1, 51):
-    m = my_queue.read()
-    at_bat = m.get_body()
-
-#    print 'Result : ' + at_bat
-
-    if at_bat == 'strikeout':
-        play_out(at_bat)
-    elif at_bat == 'groundout':
-        play_out(at_bat)
-    elif at_bat == 'flyout':
-        play_out(at_bat)
-    else:
-        play_hit(at_bat)
-
-    time.sleep(1)
-
-    my_queue.delete_message(m)
+    process_atbat()

@@ -1,5 +1,4 @@
-
-# testing out SQS functionality
+# python program designed to simulate a baseball game
 
 import boto.sqs
 conn = boto.sqs.connect_to_region("us-west-2")
@@ -8,6 +7,7 @@ conn = boto.sqs.connect_to_region("us-west-2")
 
 import time
 import random
+import json
 
 # connect to the AtBat SQS queue
 
@@ -23,27 +23,35 @@ for i in range(1, 1001):
     m = Message()
 
     outcome = random.randrange(1, 600)
-    print outcome
 
-    if outcome < 40:
-        m.set_body('homerun')
-    elif outcome < 50:
-        m.set_body('triple')
-    elif outcome < 90:
-       m.set_body('double')
-    elif outcome < 200:
-        m.set_body('single')
+    if outcome < 25:
+        atbat = 'homerun'
+    elif outcome < 32:
+        atbat = 'triple'
+    elif outcome < 70:
+        atbat = 'double'
+    elif outcome < 175:
+        atbat = 'single'
     elif outcome < 300:
-        m.set_body('groundout')
+        atbat = 'groundout'
     elif outcome < 400:
-        m.set_body('strikeout')
+        atbat = 'strikeout'
     else:
-        m.set_body('flyout')
+        atbat = 'flyout'
 
+    y = '{"atbat" : "' + atbat + '", "random" : ' + str(outcome) + '}'
+    x = json.loads(y)
+
+    m.set_body(y)
     m.message_attributes = {"Label":{"data_type": "String", "string_value": "Baseball"},
                             "Sequence":{"data_type": "Number", "string_value": i }}
     my_queue.write(m)
+
     print m.get_body()
-    time.sleep(.1)
+
+    time.sleep(.01)
+
+print 'generation complete'
+
 
 

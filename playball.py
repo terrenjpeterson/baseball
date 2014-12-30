@@ -7,12 +7,14 @@ import time
 
 # initialize global variables to begin the game
 
+gamespeed = 0.1
 out = 0
 inning = 1
 visitor_score = 0
 home_score = 0
 
 visitor_atbat = True
+game_inprogress = True
 
 runner_on_first = False
 runner_on_second = False
@@ -29,7 +31,7 @@ print my_queue
 # process logic around an atbat
 
 def process_atbat():
-    global at_bat
+    global at_bat, gamespeed
 
     m = my_queue.read()
     at_bat = m.get_body()
@@ -43,14 +45,24 @@ def process_atbat():
     else:
         play_hit(at_bat)
 
-    time.sleep(1)
+    time.sleep(gamespeed)
 
     my_queue.delete_message(m)
+
+# wrap-up the game at the end
+
+def process_final_score():
+    global visitor_score, home_score
+
+    print '---------------------------'
+    print 'Final Score - Visitor %d ' % visitor_score
+    print '              Home %d ' % home_score
+    print '---------------------------'
 
 # process logic for an out
 
 def play_out(at_bat):
-    global out, inning
+    global out, inning, game_inprogress, visitor_atbat
 
     print 'Result : ' + at_bat
 
@@ -58,7 +70,14 @@ def play_out(at_bat):
     print 'Number of outs: %d' % out
 
     if out == 3:
-        inning_change()
+        if inning == 9:
+            if visitor_atbat:
+                inning_change()
+            else:
+                process_final_score()
+                game_inprogress = False
+        else:
+            inning_change()
 
 # process when an inning changes over, including removing baserunners
 
@@ -209,5 +228,5 @@ def record_homerun():
       
 # main processing for the game
 
-for i in range(1, 51):
+while (game_inprogress):
     process_atbat()

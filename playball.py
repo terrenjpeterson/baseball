@@ -4,10 +4,11 @@ import boto.sqs
 conn = boto.sqs.connect_to_region("us-west-2")
 
 import time
+import json
 
 # initialize global variables to begin the game
 
-gamespeed = 0.1
+gamespeed = 0.01
 out = 0
 inning = 1
 visitor_score = 0
@@ -34,7 +35,10 @@ def process_atbat():
     global at_bat, gamespeed
 
     m = my_queue.read()
-    at_bat = m.get_body()
+    x = m.get_body()
+    y = json.loads(x)
+
+    at_bat = y['atbat']
 
     if at_bat == 'strikeout':
         play_out(at_bat)
@@ -58,6 +62,20 @@ def process_final_score():
     print 'Final Score - Visitor %d ' % visitor_score
     print '              Home %d ' % home_score
     print '---------------------------'
+
+    game_queue = conn.get_queue('BaseballGame')
+    print 'queue name'
+    print game_queue
+
+    from boto.sqs.message import Message
+
+    g = Message()
+
+    game_result = '{"visitor" : ' + str(visitor_score) + ', "home" : ' + str(home_score) + '}'
+
+    g.set_body(game_result)
+
+    game_queue.write(g)
 
 # process logic for an out
 

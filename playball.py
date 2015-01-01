@@ -1,10 +1,15 @@
-# connect to SQS to gather data for at-bats
+# used to connect to SQS
 
 import boto.sqs
 conn = boto.sqs.connect_to_region("us-west-2")
 
 import time
 import json
+
+# these are used to create API calls and write to a buffer
+
+import pycurl
+import cStringIO
 
 # initialize global variables to begin the game
 
@@ -21,6 +26,7 @@ h_hit = [0] * 10
 v_hit = [0] * 10
 
 h_lineup = []
+h_positions = []
 v_lineup = []
 
 visitor_batter_up = 1
@@ -68,20 +74,37 @@ def get_team_info():
     h_lineup.append(x[team]['eighth']['name'])
     h_lineup.append(x[team]['ninth']['name'])
 
-    print h_lineup[1], h_lineup[2], h_lineup[3]
-    print h_lineup[4], h_lineup[5], h_lineup[6]
-    print h_lineup[7], h_lineup[8], h_lineup[9]
+    h_positions.append(team)
+    h_positions.append(x[team]['first']['pos'])
+    h_positions.append(x[team]['second']['pos'])
+    h_positions.append(x[team]['third']['pos'])
+    h_positions.append(x[team]['fourth']['pos'])
+    h_positions.append(x[team]['fifth']['pos'])
+    h_positions.append(x[team]['sixth']['pos'])
+    h_positions.append(x[team]['seventh']['pos'])
+    h_positions.append(x[team]['eighth']['pos'])
+    h_positions.append(x[team]['ninth']['pos'])
 
 # process logic around an atbat
 
 def process_atbat():
     global at_bat, gamespeed, visitor_batter_up, home_batter_up, visitor_atbat
 
-    m = my_queue.read()
-    x = m.get_body()
-    y = json.loads(x)
+    buf = cStringIO.StringIO()
 
-    at_bat = y['atbat']
+    c = pycurl.Curl()
+    c.setopt(c.URL, 'http://ec2-54-148-170-47.us-west-2.compute.amazonaws.com:8080/play')
+    c.setopt(c.WRITEFUNCTION, buf.write)
+    c.perform()
+
+    res = json.loads(buf.getvalue())
+
+    if res['outcome'] == 'out':
+        at_bat = res['type']
+    else:
+        at_bat = res['hit']
+
+    buf.truncate(0)
 
     if at_bat == 'strikeout':
         play_out(at_bat)
@@ -106,8 +129,6 @@ def process_atbat():
             home_batter_up = 1
 
     time.sleep(gamespeed)
-
-    my_queue.delete_message(m)
 
 # wrap-up the game at the end
 
@@ -137,7 +158,7 @@ def process_final_score():
 
     print '   HOME BOX SCORE'
     for i in range(1, 10):
-        print h_lineup[i] + '\t' + str(i) + ' AB ' + str(h_ab[i]) + ' H ' + str(h_hit[i])
+        print h_lineup[i] + ', ' + h_positions[i] + '\t' + ' AB ' + str(h_ab[i]) + ' H ' + str(h_hit[i])
         home_ab += h_ab[i]
         home_hit += h_hit[i]
 

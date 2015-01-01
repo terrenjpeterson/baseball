@@ -13,7 +13,7 @@ import cStringIO
 
 # initialize global variables to begin the game
 
-gamespeed = 0.01
+gamespeed = 0.00
 out = 0
 inning = 1
 visitor_score = 0
@@ -92,8 +92,13 @@ def process_atbat():
 
     buf = cStringIO.StringIO()
 
+    if visitor_atbat:
+        batter = 'default'
+    else:
+        batter = h_lineup[home_batter_up]
+
     c = pycurl.Curl()
-    c.setopt(c.URL, 'http://ec2-54-148-170-47.us-west-2.compute.amazonaws.com:8080/play')
+    c.setopt(c.URL, 'http://ec2-54-148-170-47.us-west-2.compute.amazonaws.com:8080/play?' + batter)
     c.setopt(c.WRITEFUNCTION, buf.write)
     c.perform()
 
@@ -122,7 +127,7 @@ def process_atbat():
         if visitor_batter_up > 9:
             visitor_batter_up = 1
     else:
-        print 'home batter : ' + str(home_batter_up)
+        print 'home batter : ' + batter
         h_ab[home_batter_up] += 1
         home_batter_up += 1
         if home_batter_up > 9:

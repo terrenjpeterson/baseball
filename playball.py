@@ -17,8 +17,12 @@ gamespeed = 0.1
 
 out = 0
 inning = 1
+
 visitor_score = 0
 home_score = 0
+
+visitor_name = 'visiting team'
+home_name = 'home team'
 
 h_ab = [0] * 10
 v_ab = [0] * 10
@@ -28,7 +32,9 @@ v_hit = [0] * 10
 
 h_lineup = []
 h_positions = []
+
 v_lineup = []
+v_positions = []
 
 visitor_batter_up = 1
 home_batter_up = 1
@@ -66,6 +72,7 @@ def initialize_game():
 # retrieve team information here based on which team is playing
 
 def get_team_info():
+    global home_name, visitor_name
 
     team_info = boto.connect_s3()
 
@@ -76,10 +83,14 @@ def get_team_info():
     k = Key(bucket)
 
     team = 'nationals'
+    home_name = team
+
     k.key = team
 
     s = k.get_contents_as_string()
     x = json.loads(s)
+
+    print 'loading lineup for: ' + team
 
     h_lineup.append(team)
     h_lineup.append(x[team]['first']['name'])
@@ -103,6 +114,39 @@ def get_team_info():
     h_positions.append(x[team]['eighth']['pos'])
     h_positions.append(x[team]['ninth']['pos'])
 
+    team = 'giants'
+    visitor_name = team
+
+    k.key = team
+
+    s = k.get_contents_as_string()
+
+    x = json.loads(s)
+
+    print 'loading lineup for: ' + team
+
+    v_lineup.append(team)
+    v_lineup.append(x[team]['first']['name'])
+    v_lineup.append(x[team]['second']['name'])
+    v_lineup.append(x[team]['third']['name'])
+    v_lineup.append(x[team]['fourth']['name'])
+    v_lineup.append(x[team]['fifth']['name'])
+    v_lineup.append(x[team]['sixth']['name'])
+    v_lineup.append(x[team]['seventh']['name'])
+    v_lineup.append(x[team]['eighth']['name'])
+    v_lineup.append(x[team]['ninth']['name'])
+
+    v_positions.append(team)
+    v_positions.append(x[team]['first']['pos'])
+    v_positions.append(x[team]['second']['pos'])
+    v_positions.append(x[team]['third']['pos'])
+    v_positions.append(x[team]['fourth']['pos'])
+    v_positions.append(x[team]['fifth']['pos'])
+    v_positions.append(x[team]['sixth']['pos'])
+    v_positions.append(x[team]['seventh']['pos'])
+    v_positions.append(x[team]['eighth']['pos'])
+    v_positions.append(x[team]['ninth']['pos'])
+
 # process logic around an atbat
 
 def process_atbat():
@@ -111,7 +155,7 @@ def process_atbat():
     buf = cStringIO.StringIO()
 
     if visitor_atbat:
-        batter = 'default'
+        batter = v_lineup[visitor_batter_up]
     else:
         batter = h_lineup[home_batter_up]
 
@@ -175,7 +219,7 @@ def process_final_score():
     print '  VISITORS BOX SCORE'
 
     for i in range(1, 10):
-        print 'batter ' + str(i) + ' AB ' + str(v_ab[i]) + ' H ' + str(v_hit[i])
+        print v_lineup[i] + ', ' + v_positions[i] + '\t AB ' + str(v_ab[i]) + ' H ' + str(v_hit[i])
         visitor_ab += v_ab[i]
         visitor_hit += v_hit[i]
 
@@ -185,7 +229,7 @@ def process_final_score():
 
     print '   HOME BOX SCORE'
     for i in range(1, 10):
-        print h_lineup[i] + ', ' + h_positions[i] + '\t' + ' AB ' + str(h_ab[i]) + ' H ' + str(h_hit[i])
+        print h_lineup[i] + ', ' + h_positions[i] + '\t AB ' + str(h_ab[i]) + ' H ' + str(h_hit[i])
         home_ab += h_ab[i]
         home_hit += h_hit[i]
 
@@ -230,8 +274,8 @@ def inning_change():
          print '---------------------------'
          print 'Beginning inning number: %d' % inning
          print '---------------------------'
-         print 'Score - Visitor %d ' % visitor_score
-         print '        Home %d ' % home_score
+         print 'Score - ' + visitor_name + ' : ' + str(visitor_score)
+         print '        ' + home_name + ' : ' + str(home_score)
          print '---------------------------'
          visitor_atbat = True
 
@@ -304,6 +348,7 @@ def record_double():
     if runner_on_first:
         print 'Runner moves from first to third'
         runner_on_first = False
+        runner_on_third = True
 
     print 'Runner advances to second with a double'
 
@@ -367,18 +412,15 @@ def record_homerun():
    else:
        home_score += run_batted_in
 
-   print 'Score Visitor %d ' % visitor_score
-   print '      Home %d ' % home_score
-      
 # main processing for the game
 
 get_team_info()
 
-for i in range(1, 2):
+for i in range(1, 501):
     game_inprogress = True
     while (game_inprogress):
         process_atbat()
-        time.sleep(gamespeed)
+#        time.sleep(gamespeed)
 
     process_final_score()
 

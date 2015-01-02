@@ -13,7 +13,8 @@ import cStringIO
 
 # initialize global variables to begin the game
 
-gamespeed = 0.00
+gamespeed = 0.1
+
 out = 0
 inning = 1
 visitor_score = 0
@@ -39,17 +40,32 @@ runner_on_first = False
 runner_on_second = False
 runner_on_third = False
 
-# connect to the AtBat queue that has simulations predefined
+# connect to the Baseball Schedule queue to see if any games are to be played
 
-my_queue = conn.get_queue('AtBat')
+my_queue = conn.get_queue('BaseballSchedule')
 
 # start functions here
+
+def initialize_game():
+    global out, inning, visitor_score, home_score, visitor_batter_up, home_batter_up, visitor_atbat, h_ab, v_ab, h_hit, v_hit
+
+    out = 0
+    inning = 1
+    visitor_score = 0
+    home_score = 0
+    visitor_batter_up = 1
+    home_batter_up = 1
+    visitor_atbat = True
+
+    for i in range(1, 10):
+        h_ab[i] = 0
+        v_ab[i] = 0
+        h_hit[i] = 0
+        v_hit[i] = 0
 
 # retrieve team information here based on which team is playing
 
 def get_team_info():
-
-    team = 'nationals'
 
     team_info = boto.connect_s3()
 
@@ -58,6 +74,8 @@ def get_team_info():
     from boto.s3.key import Key
 
     k = Key(bucket)
+
+    team = 'nationals'
     k.key = team
 
     s = k.get_contents_as_string()
@@ -88,7 +106,7 @@ def get_team_info():
 # process logic around an atbat
 
 def process_atbat():
-    global at_bat, gamespeed, visitor_batter_up, home_batter_up, visitor_atbat
+    global at_bat, visitor_batter_up, home_batter_up, visitor_atbat, out, game_inprogress
 
     buf = cStringIO.StringIO()
 
@@ -102,40 +120,44 @@ def process_atbat():
     c.setopt(c.WRITEFUNCTION, buf.write)
     c.perform()
 
+    print 'batter up: ' + batter
+
     res = json.loads(buf.getvalue())
 
     if res['outcome'] == 'out':
         at_bat = res['type']
+        play_out(at_bat)
     else:
         at_bat = res['hit']
+        play_hit(at_bat)
 
     buf.truncate(0)
 
-    if at_bat == 'strikeout':
-        play_out(at_bat)
-    elif at_bat == 'groundout':
-        play_out(at_bat)
-    elif at_bat == 'flyout':
-        play_out(at_bat)
-    else:
-        play_hit(at_bat)
+    # determine which batter is up next
 
     if visitor_atbat:
-        print 'visitor batter : ' + str(visitor_batter_up)
         v_ab[visitor_batter_up] += 1
         visitor_batter_up += 1
         if visitor_batter_up > 9:
             visitor_batter_up = 1
     else:
-        print 'home batter : ' + batter
         h_ab[home_batter_up] += 1
         home_batter_up += 1
         if home_batter_up > 9:
             home_batter_up = 1
 
-    time.sleep(gamespeed)
+    # check to see if inning and or game is done
 
-# wrap-up the game at the end
+    if out > 2:
+        if inning == 9:
+            if visitor_atbat:
+                inning_change()
+            else:
+                game_inprogress = False
+        else:
+            inning_change()
+
+# function to wrap-up the game at the end
 
 def process_final_score():
     global visitor_score, home_score
@@ -193,22 +215,11 @@ def play_out(at_bat):
     out += 1
     print 'Number of outs: %d' % out
 
-    if out == 3:
-        if inning == 9:
-            if visitor_atbat:
-                inning_change()
-            else:
-                process_final_score()
-                game_inprogress = False
-        else:
-            inning_change()
-
 # process when an inning changes over, including removing baserunners
 
 def inning_change():
      global out, inning, visitor_atbat, runner_on_first, runner_on_second, runner_on_third
 
-     print 'Inning change'
      out = 0
 
      if visitor_atbat:
@@ -363,5 +374,15 @@ def record_homerun():
 
 get_team_info()
 
-while (game_inprogress):
-    process_atbat()
+for i in range(1, 2):
+    game_inprogress = True
+    while (game_inprogress):
+        process_atbat()
+        time.sleep(gamespeed)
+
+    process_final_score()
+
+    print 'game ' + str(i)
+
+    initialize_game()
+

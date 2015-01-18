@@ -1,0 +1,74 @@
+[
+  {
+     "name" : "Blanco",
+     "homeruns" : 5,
+     "doubles" : 18,
+     "triples" : 6,
+     "average" : 260,
+     "hits" : 102
+  },
+  {
+     "name" : "Panik",
+     "homeruns" : 1,
+     "doubles" : 10,
+     "triples" : 2,
+     "average" : 305,
+     "hits" : 82
+  },
+  {
+     "name" : "Posey",
+     "homeruns" : 22,
+     "doubles" : 28,
+     "triples" : 2,
+     "average" : 311,
+     "hits" : 170
+  },
+  {
+     "name" : "Pence",
+     "homeruns" : 20,
+     "doubles" : 29,
+     "triples" : 10,
+     "average" : 277,
+     "hits" : 180
+  },
+  {
+     "name" : "Sandoval",
+     "homeruns" : 16,
+     "doubles" : 26,
+     "triples" : 3,
+     "average" : 279,
+     "hits" : 164
+  },
+  {
+     "name" : "Belt",
+     "homeruns" : 12,
+     "doubles" : 8,
+     "triples" : 0,
+     "average" : 243,
+     "hits" : 52
+  },
+  {
+     "name" : "Crawford",
+     "homeruns" : 10,
+     "doubles" : 20,
+     "triples" : 10,
+     "average" : 246,
+     "hits" : 121
+  },
+  {
+     "name" : "Ishikawa",
+     "homeruns" : 2,
+     "doubles" : 3,
+     "triples" : 0,
+     "average" : 274,
+     "hits" : 20 
+  },
+  {
+     "name" : "Bumgarner",
+     "homeruns" : 4,
+     "doubles" : 2,
+     "triples" : 0,
+     "average" : 258,
+     "hits" : 17 
+  }
+]

@@ -1,10 +1,19 @@
 baseball
 ========
 
-testing out SQS using baseball game
+testing out different AWS features using baseball game
 
-there are two python programs that communicate via SQS
+atbat.js is an API written in nodeJS that simulates an at-bat based on a player name provided in the URI
 
-the first one uses random numbers to simulate atbats (i.e. single, strikeout, etc.)
+to call the API, use GET /play?<batter last name>, and a json response will provide the result of the at-bat
 
-the second one consumes the atbats, and tracks the progress of the game
+currently teams hitting data that are processed by the API are as follows:
+- giants.json 
+- nationals.json
+
+the driver for the program is a python script playball.py that contains the rules for the game, and uses the API above
+
+the lineups used for the game are fetched from an S3 bucket
+
+once the game is completed, the results are written to an SQS queue for analysis
+

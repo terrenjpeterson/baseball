@@ -50,6 +50,10 @@ runner_on_third = False
 
 my_queue = conn.get_queue('BaseballSchedule')
 
+# connect to the Batter Results queue for writting results from the individual at-bats
+
+batter_queue = conn.get_queue('BatterResults')
+
 # start functions here
 
 def initialize_game():
@@ -177,6 +181,20 @@ def process_atbat():
 
     buf.truncate(0)
 
+    # write the result of the atbat out to a queue
+
+    at_bat_queue = conn.get_queue('BatterResults')
+
+    from boto.sqs.message import Message
+
+    ab = Message()
+
+    ab_result = '{"name" : ' + batter + ', "result" : ' + at_bat + '}'
+
+    ab.set_body(ab_result)
+
+    at_bat_queue.write(ab)
+
     # determine which batter is up next
 
     if visitor_atbat:
@@ -212,8 +230,8 @@ def process_final_score():
     home_hit = 0
     
     print '---------------------------'
-    print 'Final Score - Visitor %d ' % visitor_score
-    print '              Home %d ' % home_score
+    print 'Final Score - ' + visitor_name + ' : ' + str(visitor_score)
+    print '              ' + home_name + ' : ' + str(home_score)
     print '---------------------------'
 
     print '  VISITORS BOX SCORE'
@@ -416,7 +434,7 @@ def record_homerun():
 
 get_team_info()
 
-for i in range(1, 501):
+for i in range(1, 2001):
     game_inprogress = True
     while (game_inprogress):
         process_atbat()

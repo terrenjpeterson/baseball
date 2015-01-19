@@ -3,19 +3,23 @@
 
 var express = require('express');
 var http = require('http');
-//var connect = require('connect');
 var fs = require('fs');
 var Chance = require('chance');
 var math = require('mathjs');
 
+var NATIONALS_DATA_FILE = "nationals.json";
+var GIANTS_DATA_FILE = "giants.json";
+
 // establish global variables
 
-var average = 300;
+var hitting_array = [];
 
-var hits = 190;
-var homerun = 30;
-var triples = 9;
-var doubles = 23;
+var average = 250;
+
+var hits = 150;
+var homerun = 10;
+var triples = 4;
+var doubles = 20;
 
 var strikeout_average = .35;
 var groundout_average = .25;
@@ -26,24 +30,61 @@ var app = express();
 
 var server = http.createServer(app);
 
-// the logic for the api
+console.log('loading batting data');
 
-console.log('loading routes');
+var nationals_data = fs.readFileSync(NATIONALS_DATA_FILE, 'utf8');
+var nationals_array = eval('('+ nationals_data + ')');
+
+console.log('loading nationals hitters');
+
+for (var i = 0; i < nationals_array.length; i++)
+  {console.log('batter info: ' + JSON.stringify(nationals_array[i]));
+   hitting_array.push(nationals_array[i]);}
+
+var giants_data = fs.readFileSync(GIANTS_DATA_FILE, 'utf8');
+var giants_array = eval('('+ giants_data + ')');
+
+console.log('loading giants hitters');
+
+for (var i = 0; i < giants_array.length; i++)
+  {console.log('batter info: ' + JSON.stringify(giants_array[i]));
+   hitting_array.push(giants_array[i]);}
+
+// the logic for the api
 
 app.get('/play', function(req, res){
 
+//    console.log('play API called' + req.url);
+
     batter = {};
+    batter.name = req.url.slice(6, req.url.length);
+
+    // these are the default values
+
     batter.average = average;
-    batter.hits = hits;
+    batter.hits    = hits;
     batter.homerun = homerun;
     batter.triples = triples;
     batter.doubles = doubles;
+
+    // check the array of hitters to find specific attributes to set
+
+    for (var i = 0; i < hitting_array.length; i++)
+      {
+       if (batter.name == hitting_array[i].name)
+         {
+          batter.homerun = hitting_array[i].homeruns;
+          batter.doubles = hitting_array[i].doubles;
+          batter.triples = hitting_array[i].triples;
+          batter.average = hitting_array[i].average;
+          batter.hits    = hitting_array[i].hits;
+         }
+      }
+
+    // these are the same for all batters
+
     batter.strikeout_average = strikeout_average;
     batter.groundout_average = groundout_average;
-
-    console.log('play API called' + req.url);
-
-    console.log(req.url.slice(6, req.url.length));
 
     atBat(batter, res);
 
@@ -51,7 +92,7 @@ app.get('/play', function(req, res){
 
 function atBat(batter, res) {
 
-  console.log('batter is : ' + batter.average);
+  console.log('batter stats : ' + JSON.stringify(batter));
 
   var chance = new Chance();
 
@@ -60,14 +101,14 @@ function atBat(batter, res) {
   var result = {};
       result.random = my_random_int;
 
-  var homerun_range = math.round(average * (homerun/hits), 0);
-  var triple_range = math.round(average * (triples/hits) + homerun_range, 0);
-  var double_range = math.round(average * (doubles/hits) + triple_range, 0);
+  var homerun_range = math.round(batter.average * (batter.homerun/batter.hits), 0);
+  var triple_range = math.round(batter.average * (batter.triples/batter.hits) + homerun_range, 0);
+  var double_range = math.round(batter.average * (batter.doubles/batter.hits) + triple_range, 0);
 
-  var strikeout_range = math.round(strikeout_average * (1000 - average) + average, 0);
-  var groundout_range = math.round(groundout_average * (1000 - average) + strikeout_range, 0);
+  var strikeout_range = math.round(strikeout_average * (1000 - batter.average) + batter.average, 0);
+  var groundout_range = math.round(groundout_average * (1000 - batter.average) + strikeout_range, 0);
 
-  if (my_random_int < average)
+  if (my_random_int < batter.average)
     {
      // process the result of a basehit
 
@@ -101,12 +142,12 @@ function atBat(batter, res) {
 
   // respond with the result of the atbat
 
-  console.log(result);
-
   res.send(result);
 
 };
 
 // begin listening on the port for traffic
+
+console.log('server starting');
 
 app.listen(8080);

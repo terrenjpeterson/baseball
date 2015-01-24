@@ -90,6 +90,14 @@ app.get('/play', function(req, res){
 
 });
 
+app.get('/index.html', function(req, res){
+
+    console.log('index page hit');
+
+    res.send();
+
+});
+
 function atBat(batter, res) {
 
   console.log('batter stats : ' + JSON.stringify(batter));

@@ -39,6 +39,9 @@ v_positions = []
 visitor_batter_up = 1
 home_batter_up = 1
 
+visitor_pitches_thrown = 0
+home_pitches_thrown = 0
+
 visitor_atbat = True
 game_inprogress = True
 
@@ -49,6 +52,10 @@ runner_on_third = False
 # connect to the Baseball Schedule queue to see if any games are to be played
 
 my_queue = conn.get_queue('BaseballSchedule')
+
+# connect to the Batter Results queue for writting results from the individual at-bats
+
+batter_queue = conn.get_queue('BatterResults')
 
 # start functions here
 
@@ -150,7 +157,9 @@ def get_team_info():
 # process logic around an atbat
 
 def process_atbat():
-    global at_bat, visitor_batter_up, home_batter_up, visitor_atbat, out, game_inprogress
+    global at_bat, visitor_batter_up, home_batter_up, visitor_atbat, out, game_inprogress, visitor_pitches_thrown, home_pitches_thrown
+
+    # first create a buffer
 
     buf = cStringIO.StringIO()
 
@@ -159,6 +168,8 @@ def process_atbat():
     else:
         batter = h_lineup[home_batter_up]
 
+    # call the API to process the at-bat
+
     c = pycurl.Curl()
     c.setopt(c.URL, 'http://ec2-54-148-170-47.us-west-2.compute.amazonaws.com:8080/play?' + batter)
     c.setopt(c.WRITEFUNCTION, buf.write)
@@ -166,7 +177,11 @@ def process_atbat():
 
     print 'batter up: ' + batter
 
+    # load the buffer with the json object returned from the API
+
     res = json.loads(buf.getvalue())
+
+    # parse out the attbitues returned in the object
 
     if res['outcome'] == 'out':
         at_bat = res['type']
@@ -175,16 +190,36 @@ def process_atbat():
         at_bat = res['hit']
         play_hit(at_bat)
 
+    # clear the buffer for the next batter
+
     buf.truncate(0)
+
+    # write the result of the atbat out to a queue
+
+    at_bat_queue = conn.get_queue('BatterResults')
+
+    from boto.sqs.message import Message
+
+    ab = Message()
+
+    ab_result = '{"name" : ' + batter + ', "result" : ' + at_bat + '}'
+
+    ab.set_body(ab_result)
+
+    at_bat_queue.write(ab)
 
     # determine which batter is up next
 
     if visitor_atbat:
+        home_pitches_thrown += res['pitches']
+        print 'home pitches thrown: ' + str(home_pitches_thrown)
         v_ab[visitor_batter_up] += 1
         visitor_batter_up += 1
         if visitor_batter_up > 9:
             visitor_batter_up = 1
     else:
+        visitor_pitches_thrown += res['pitches']
+        print 'visitor pitches thrown: ' + str(visitor_pitches_thrown)
         h_ab[home_batter_up] += 1
         home_batter_up += 1
         if home_batter_up > 9:
@@ -212,8 +247,8 @@ def process_final_score():
     home_hit = 0
     
     print '---------------------------'
-    print 'Final Score - Visitor %d ' % visitor_score
-    print '              Home %d ' % home_score
+    print 'Final Score - ' + visitor_name + ' : ' + str(visitor_score)
+    print '              ' + home_name + ' : ' + str(home_score)
     print '---------------------------'
 
     print '  VISITORS BOX SCORE'
@@ -416,7 +451,7 @@ def record_homerun():
 
 get_team_info()
 
-for i in range(1, 501):
+for i in range(1, 2):
     game_inprogress = True
     while (game_inprogress):
         process_atbat()

@@ -98,8 +98,11 @@ function atBat(batter, res) {
 
   var my_random_int = chance.integer({min: 1, max: 1000});
 
+  var pitches_thrown = chance.integer({min: 1, max: 8});
+
   var result = {};
-      result.random = my_random_int;
+      result.random  = my_random_int;
+      result.pitches = pitches_thrown;
 
   var homerun_range = math.round(batter.average * (batter.homerun/batter.hits), 0);
   var triple_range = math.round(batter.average * (batter.triples/batter.hits) + homerun_range, 0);

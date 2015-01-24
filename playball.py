@@ -39,6 +39,9 @@ v_positions = []
 visitor_batter_up = 1
 home_batter_up = 1
 
+visitor_pitches_thrown = 0
+home_pitches_thrown = 0
+
 visitor_atbat = True
 game_inprogress = True
 
@@ -154,7 +157,9 @@ def get_team_info():
 # process logic around an atbat
 
 def process_atbat():
-    global at_bat, visitor_batter_up, home_batter_up, visitor_atbat, out, game_inprogress
+    global at_bat, visitor_batter_up, home_batter_up, visitor_atbat, out, game_inprogress, visitor_pitches_thrown, home_pitches_thrown
+
+    # first create a buffer
 
     buf = cStringIO.StringIO()
 
@@ -163,6 +168,8 @@ def process_atbat():
     else:
         batter = h_lineup[home_batter_up]
 
+    # call the API to process the at-bat
+
     c = pycurl.Curl()
     c.setopt(c.URL, 'http://ec2-54-148-170-47.us-west-2.compute.amazonaws.com:8080/play?' + batter)
     c.setopt(c.WRITEFUNCTION, buf.write)
@@ -170,7 +177,11 @@ def process_atbat():
 
     print 'batter up: ' + batter
 
+    # load the buffer with the json object returned from the API
+
     res = json.loads(buf.getvalue())
+
+    # parse out the attbitues returned in the object
 
     if res['outcome'] == 'out':
         at_bat = res['type']
@@ -178,6 +189,8 @@ def process_atbat():
     else:
         at_bat = res['hit']
         play_hit(at_bat)
+
+    # clear the buffer for the next batter
 
     buf.truncate(0)
 
@@ -198,11 +211,15 @@ def process_atbat():
     # determine which batter is up next
 
     if visitor_atbat:
+        home_pitches_thrown += res['pitches']
+        print 'home pitches thrown: ' + str(home_pitches_thrown)
         v_ab[visitor_batter_up] += 1
         visitor_batter_up += 1
         if visitor_batter_up > 9:
             visitor_batter_up = 1
     else:
+        visitor_pitches_thrown += res['pitches']
+        print 'visitor pitches thrown: ' + str(visitor_pitches_thrown)
         h_ab[home_batter_up] += 1
         home_batter_up += 1
         if home_batter_up > 9:
@@ -434,7 +451,7 @@ def record_homerun():
 
 get_team_info()
 
-for i in range(1, 2001):
+for i in range(1, 2):
     game_inprogress = True
     while (game_inprogress):
         process_atbat()
